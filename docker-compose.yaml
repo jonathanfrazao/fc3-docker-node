@@ -6,12 +6,20 @@ services:
     restart: always
     build:
       context: ./node
+    volumes:
+      - ./node:/usr/src/app
+      - /usr/src/app/node_modules
+    links:
+      - db
     depends_on:
       - db
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 20s docker-entrypoint.sh
+    command: "node ./index.js"
     networks:
       - node-network
 
   db:
+    image: mysql:5.7
     build: 
       context: ./mysql
     container_name: db
@@ -21,6 +29,7 @@ services:
       - node-network
     volumes:
       - ./mysql/volume:/var/lib/mysql
+      - ./mysql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
     environment:
       - MYSQL_DATABASE=nodedb
       - MYSQL_ROOT_PASSWORD=root
